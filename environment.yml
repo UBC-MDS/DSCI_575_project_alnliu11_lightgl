@@ -1,0 +1,13 @@
+# install with conda env create -f env-dsci-575.yml 
+name: 'project-query'
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.11,<3.13
+  - pip
+  - ipykernel
+  - pandas
+  - requests
+  - pip:
+    - python-dotenv
