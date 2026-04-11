@@ -1,5 +1,5 @@
-# install with conda env create -f env-dsci-575.yml 
-name: 'project-query'
+# install with conda env create -f 575-project-query.yml 
+name: '575-project-query'
 channels:
   - conda-forge
   - defaults
@@ -9,5 +9,8 @@ dependencies:
   - ipykernel
   - pandas
   - requests
+  - faiss-cpu
   - pip:
     - python-dotenv
+    - langchain-community
+    - langchain-huggingface
