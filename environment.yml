@@ -1,4 +1,4 @@
-# install with conda env create -f env-dsci-575.yml 
+# install with conda env create -f 575-project-query.yml 
 name: '575-project-query'
 channels:
   - conda-forge
