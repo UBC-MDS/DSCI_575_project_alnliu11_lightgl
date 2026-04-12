@@ -20,3 +20,4 @@ dependencies:
     - langchain-core
     - langchain-community
     - langchain-huggingface
+    - streamlit
