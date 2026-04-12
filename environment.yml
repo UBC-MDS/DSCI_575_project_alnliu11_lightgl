@@ -1,4 +1,4 @@
-# install with conda env create -f 575-project-query.yml 
+# install with conda env create -f environment.yml 
 name: '575-project-query'
 channels:
   - conda-forge
