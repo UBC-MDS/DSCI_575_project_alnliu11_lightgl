@@ -4,6 +4,14 @@ from rank_bm25 import BM25Okapi
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from src.bm25 import BM25
+from src.utils import *
+
 #Adopted from GPT. 
 
 # --- 1. Load Data & Models ---
@@ -17,8 +25,9 @@ def load_resources():
     
     # Extract metadata/text for BM25
     content = [doc.page_content for doc in vector_store.docstore._dict.values()]
-    tokenized_corpus = [doc.lower().split() for doc in content]
-    bm25 = BM25Okapi(tokenized_corpus)
+
+    docs = construct_corpus()
+    bm25 = BM25.from_documents(docs, 3, preprocess_and_tokenize)
     
     return vector_store, bm25, content
 
@@ -36,7 +45,7 @@ def get_results(query, mode, k=3):
     
     if mode == "BM25":
         tokenized_query = query.lower().split()
-        scores = bm25.get_scores(tokenized_query)
+        scores = bm25.retriever.vectorizer.get_scores(tokenized_query)
         top_n = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
         for i in top_n:
             title=all_texts[i].split('|')[0]
