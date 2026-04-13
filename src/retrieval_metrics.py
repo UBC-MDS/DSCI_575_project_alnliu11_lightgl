@@ -8,8 +8,17 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 if __name__ == '__main__':
     topK=5
-    docs = construct_corpus()
-    bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize)
+    model_folder = Path("models")
+    model_folder.mkdir(parents=True, exist_ok=True)
+    bm25_index_path = model_folder / "bm25_index.joblib"
+    bm25_model = None
+    if bm25_index_path.exists():
+        bm25_model = BM25.from_index(bm25_index_path)
+    else:
+        docs = construct_corpus()
+        bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize)
+        print(f"Saving BM25 Index at {bm25_index_path}...")
+        bm25_model.dump_index(bm25_index_path)
 
     queries=['yoga mat 6mm non-slip', 
              'something comfortable for floor stretching', 
@@ -34,7 +43,7 @@ if __name__ == '__main__':
     )
 
     metrics=[]
-    for q in queries[:5]: 
+    for q in queries[:10]: 
         semantic_results=vector_store.similarity_search(q, k=topK)
         bm25_results=bm25_model.retrieve(q)
         for i in range(topK): 
