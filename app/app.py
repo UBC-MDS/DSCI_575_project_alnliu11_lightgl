@@ -44,7 +44,7 @@ def get_results(query, mode, k=3):
     results = []
     
     if mode == "BM25":
-        tokenized_query = query.lower().split()
+        tokenized_query = preprocess_and_tokenize(query)
         scores = bm25.retriever.vectorizer.get_scores(tokenized_query)
         top_n = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
         for i in top_n:
