@@ -101,6 +101,7 @@ def assemble_reviews_info(parent_asin_set):
 def construct_corpus():
     # Get processed data
     processed_data_folder = Path("data/processed")
+    processed_data_folder.mkdir(parents=True, exist_ok=True)
     processed_data_path = processed_data_folder / "merged.csv"
     merged_df = None
     if not processed_data_path.exists():
