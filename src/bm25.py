@@ -22,5 +22,18 @@ class BM25:
     def retrieve(self, query):
         return self.retriever.invoke(query)
     
+    def retrieve_with_scores(self, query, k=5):
+        # Asked GitHub Copilot how to retrieve the top 5 results with scores.
+        query_tokens = self.retriever.preprocess_func(query)
+        scores = self.retriever.vectorizer.get_scores(query_tokens)
+        docs = self.retriever.docs
+        # Find the index of the top k highest scores
+        top_idx = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+        # Return a list of documents with corresponding scores
+        return [
+            {"doc": docs[i], "score": float(scores[i])}
+            for i in top_idx
+        ]
+    
     def dump_index(self, path):
         return joblib.dump(self.retriever, path)
