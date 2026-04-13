@@ -32,7 +32,7 @@ conda env create -f environment.yml
 conda activate 575-project-query
 
 python src/download_data.py
-python src/retrieval_metrics.py
 python src/semantic.py
+python src/retrieval_metrics.py
 streamlit run app/app.py
 ```
