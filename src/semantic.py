@@ -34,16 +34,18 @@ if __name__ == '__main__':
         allow_dangerous_deserialization=True
     )
 
-    queries=['wireless bluetooth headphones', 
-         'headphones that block airplane noise', 
-         'best headphones for long flights under $200', 
-         'stainless steel water bottle 1 liter', 
-         'something to keep water cold all day', 
-         'what’s the best water bottle for hiking in hot weather', 
-         'kids lego star wars set', 
-         'toy for a child who likes space battles', 
-         'what is a good educational toy for a 7-year-old interested in space', 
-         'shoes'
-    ]
+    queries=['yoga mat 6mm non-slip', 
+             'something comfortable for floor stretching', 
+             'what is the best portable yoga mat for a tall beginner on a budget', 
+             'waterproof 2 person camping tent', 
+             'shelter for a rainy weekend in the woods', 
+             'lightweight tent for backpacking that can withstand high winds and heavy rain', 
+             '20 lb adjustable dumbbells',
+             'equipment for building arm strength at home',
+             'what are the best compact weights for a small apartment gym for high-intensity training', 
+             'carbon fiber road bike',
+             'fast bicycle for paved surfaces',
+             'what is a durable and lightweight bike suitable for long-distance commuting on hilly terrain'
+            ]
     semantic_search_results=get_query_results(queries)
     print(semantic_search_results)
