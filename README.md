@@ -20,7 +20,32 @@ And the retrieval system is based on two algorithms:
 1. BM25 keyword-based retrieval system with custom text preprocessing/tokenization functions.
 2. Semantic search using HuggingFace embeddings and FAISS-based index.
 
+### RAG Pipeline:
+```mermaid
+graph LR
+    Query[User Query] --> Ret[FAISS-based Semantic Search Retriever]
+    Ret[FAISS-based Retriever] --> Context[`build_context`]
+    Query --> Prompt[System Prompt]
+    Context --> Prompt
+    Prompt --> LLM[Qwen 3.5 2B]
+    LLM --> Parser[StrOutputParser]
+    Parser --> Response[Response]((End))
+```
+
 ## Development Setup
+
+### To get Ollama Running Locally
+1. Download: Go to <ollama.com/download> and install the Ollama for your OS.
+2. In your CLI, download the `qwen3.5:2b` model by running
+```bash
+ollama pull qwen3.5:2b
+```
+3. Verify it works by running it and trying a small prompt:
+```bash
+ollama run qwen3.5:2b --think=false
+```
+
+### Get Development Environment Ready
 The following pipeline clones the repo, creates a conda environment, downloads and prepares data, builds both keyword-based and semantic search systems, and starts an interactive Streamlit app that enables users to query products:
 
 **Disclaimer**: If `python src/download_data.py` is too slow due to the scale of the data, please manually go to the dataset links above, download the data, and put into the `data/raw` directory.
