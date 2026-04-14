@@ -32,6 +32,7 @@ conda env create -f environment.yml
 conda activate 575-project-query
 
 python src/download_data.py
+python src/utils.py
 python src/semantic.py
 python src/retrieval_metrics.py
 

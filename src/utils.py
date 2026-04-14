@@ -146,3 +146,6 @@ def preprocess_and_tokenize(text):
             if token not in stop_words:
                 preprocessed.append(token)
     return preprocessed
+
+if __name__ == '__main__':
+    construct_corpus()
