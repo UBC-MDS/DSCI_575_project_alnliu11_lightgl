@@ -24,12 +24,12 @@ And the retrieval system is based on two algorithms:
 ```mermaid
 graph LR
     Query[User Query] --> Ret[FAISS-based Semantic Search Retriever]
-    Ret[FAISS-based Retriever] --> Context[`build_context`]
+    Ret --> Context[`build_context`]
     Query --> Prompt[System Prompt]
     Context --> Prompt
     Prompt --> LLM[Qwen 3.5 2B]
     LLM --> Parser[StrOutputParser]
-    Parser --> Response[Response]((End))
+    Parser --> Response[Response]
 ```
 
 ## Development Setup
