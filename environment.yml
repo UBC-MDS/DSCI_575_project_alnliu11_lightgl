@@ -20,5 +20,6 @@ dependencies:
     - langchain-core
     - langchain-community
     - langchain-huggingface
+    - langchain_ollama
     - sentence-transformers
     - streamlit
