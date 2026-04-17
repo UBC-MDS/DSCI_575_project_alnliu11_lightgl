@@ -51,10 +51,10 @@ def get_vector_store(embeddings, faiss_index_dir, documents=None, corpus_builder
         # Asked GPT: How to use `time` to time a piece of code?
         start_time = time.perf_counter()
         vector_store = FAISS.from_documents(documents, embeddings)
-        print(f"Creating FAISS Index took {execution_time:.4f} seconds.")
         print("Saving...")
         vector_store.save_local(faiss_index_dir)
         execution_time = time.perf_counter() - start_time
+        print(f"Creating FAISS Index took {execution_time:.4f} seconds.")
     return vector_store
 
 def get_query_results(queries, vector_store): 

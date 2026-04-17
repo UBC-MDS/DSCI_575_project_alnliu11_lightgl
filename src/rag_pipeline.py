@@ -29,19 +29,19 @@ def build_context(docs):
         p = doc.metadata.get("price", -1.0)
         price_display = f"${p:.2f}" if p > 0 else "Price not available"
 
-        r = doc.metadata.get("rating", -1.0)
+        r = doc.metadata.get("average_rating", -1.0)
         rating_display = f"{r}/5" if r > 0 else "Rating not available"
         
         # Provide alternative values in case previous preprocessing falls through
         asin = doc.metadata.get('parent_asin', 'N/A')
-        title = doc.metadata.get('product_title', 'No Title Provided')
+        title = doc.metadata.get('title', 'No Title Provided')
         features = doc.metadata.get('features', 'No features listed')
         desc = doc.metadata.get('description', 'No description available')
         cats = doc.metadata.get('categories', 'N/A')
 
         item_str = (
             f"Product ASIN: {asin}\n"
-            f"Title: {title}\n"
+            f"Product Title: {title}\n"
             f"Rating: {rating_display}/5\n"
             f"Features: {features}\n"
             f"Description: {desc}\n"
