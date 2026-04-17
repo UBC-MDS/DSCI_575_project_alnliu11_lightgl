@@ -9,8 +9,13 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import OllamaLLM
+#from langchain_ollama import OllamaLLM
+#from llama_cpp import Llama
+from langchain_community.llms import LlamaCpp
 from prompt import build_prompt
+
+from langchain_huggingface import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
 def get_retriever(vectorstore, query):
     # Adopted from Milestone 2 spec.
@@ -83,12 +88,49 @@ if __name__ == '__main__':
     vectorstore = FAISS.from_documents(split_docs, embeddings)
 
     retriever = get_retriever(vectorstore, query)
-    llm = OllamaLLM(
-        model="qwen3.5:2b",
-        model_kwargs={
-            "repeat_penalty": 1.15,
-            "temperature": 0.7,
-            "top_p": 0.8
-        }
+    #llm = OllamaLLM(
+    #    model="qwen3.5:2b",
+    # llm = Llama(
+    #     model="qwen3.5-0.8b",
+    #     model_kwargs={
+    #         "repeat_penalty": 1.15,
+    #         "temperature": 0.7,
+    #         "top_p": 0.8
+    #     }
+    # )
+    
+    # llm = LlamaCpp(
+    #     model_path="./qwen3.5:2b/",
+    #     temperature=0.7,
+    #     top_p=0.8,
+    #     repeat_penalty=1.15,
+    #     n_ctx=2048,
+    #     n_gpu_layers=-1, # Vital for Mac performance
+    #     streaming=False
+    # )
+
+    model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
+
+    # 1. Load the tokenizer and model using Transformers
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        device_map="auto",      # This handles your Mac's GPU/MPS automatically
+        torch_dtype="auto"
     )
+    
+    # 2. Create a Transformers pipeline
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=512,
+        temperature=0.7,
+        top_p=0.8,
+        repetition_penalty=1.15
+    )
+    
+    # 3. Wrap it for LangChain
+    llm = HuggingFacePipeline(pipeline=pipe)
+    
     print(lcel_pipeline(query, retriever, llm, build_prompt()))
