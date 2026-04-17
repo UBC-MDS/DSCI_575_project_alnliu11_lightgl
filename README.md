@@ -55,10 +55,18 @@ cd DSCI_575_project_alnliu11_lightgl
 
 conda env create -f environment.yml
 conda activate 575-project-query
+```
+If you have GPU and cuda-compatiable, then run `conda env create -f environment.yml`.
+Otherwise, run `conda env create -f environment_no_cuda.yml`.
 
+Then activate the environment:
+```bash
+conda activate 575-project-query
+```
+
+```bash
 python src/download_data.py
 python src/utils.py
-python src/semantic.py
 python src/retrieval_metrics.py
 
 # Might take a while to load

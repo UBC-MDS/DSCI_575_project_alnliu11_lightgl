@@ -1,7 +1,6 @@
-# install with conda env create -f environment.yml 
-name: '575-project-query'
+# install with conda env create -f environment_no_cuda.yml
+name: '575-project-query-no-cuda'
 channels:
-  - nvidia
   - pytorch
   - conda-forge
   - defaults
@@ -19,7 +18,7 @@ dependencies:
   - spacy
   - joblib
   - pytorch
-  - pytorch-cuda=12.1
+  - cpuonly
   - pip:
     - python-dotenv
     - duckdb

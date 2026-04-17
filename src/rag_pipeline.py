@@ -1,5 +1,3 @@
-# Asked GPT: a list of statements to import
-import pandas as pd
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -10,26 +8,49 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
+from pathlib import Path
 from prompt import build_prompt
+from utils import construct_corpus
+from semantic import build_embeddings, get_vector_store
 
-def get_retriever(vectorstore, query):
+def get_retriever(vectorstore):
     # Adopted from Milestone 2 spec.
+    print("Getting retriever...")
     return vectorstore.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 5} # Fetch 5 most similar documents
     )
 
 def build_context(docs):
-    return "\n\n".join(
-        f"Product ASIN: {doc.metadata.get('parent_asin', 'N/A')}\n"
-        f"Title: {doc.metadata.get('product_title', '')}\n"
-        f"Rating: {doc.metadata['rating']}/5]\n"
-        f"Features: {doc.metadata['features']}]\n"
-        f"Description: {doc.metadata['description']}]\n"
-        f"Price: {doc.metadata['price']}]\n"
-        f"Categories: {doc.metadata['categories']}]\n"
-        for doc in docs
-    )
+    context_parts = list()
+    for doc in docs:
+        # Asked GPT something like: How can LLM interpret query like "Find me this kind of product under $15"?
+        # Deal with missing price
+        p = doc.metadata.get("price", -1.0)
+        price_display = f"${p:.2f}" if p > 0 else "Price not available"
+
+        r = doc.metadata.get("rating", -1.0)
+        rating_display = f"{r}/5" if r > 0 else "Rating not available"
+        
+        # Provide alternative values in case previous preprocessing falls through
+        asin = doc.metadata.get('parent_asin', 'N/A')
+        title = doc.metadata.get('product_title', 'No Title Provided')
+        features = doc.metadata.get('features', 'No features listed')
+        desc = doc.metadata.get('description', 'No description available')
+        cats = doc.metadata.get('categories', 'N/A')
+
+        item_str = (
+            f"Product ASIN: {asin}\n"
+            f"Title: {title}\n"
+            f"Rating: {rating_display}/5\n"
+            f"Features: {features}\n"
+            f"Description: {desc}\n"
+            f"Price: {price_display}\n"
+            f"Categories: {cats}"
+        )
+        context_parts.append(item_str)
+
+    return "\n\n---\n\n".join(context_parts)
 
 def lcel_pipeline(query: str, 
     retriever: BaseRetriever, 
@@ -42,6 +63,7 @@ def lcel_pipeline(query: str,
     # individual functions, but show me what functions should be passed and
     # what each of them should do.
     # What are the types of each of these arguments?
+    print("Running RAG Chain...")
     rag_chain = (
         RunnableParallel({
             "context": retriever | build_context,
@@ -54,35 +76,41 @@ def lcel_pipeline(query: str,
 
     return rag_chain.invoke(query)
 
-if __name__ == '__main__':
-    query = "What is the best rated skateboard?"
-    merged_df = pd.read_csv('data/processed/merged.csv')
-    data_dicts = merged_df.to_dict(orient="records")
-    documents = list()
-    for record in data_dicts:
-        data = record.pop("full_content").split('|')
-        record['product_title'] = data[0]
-        record['rating'] = data[1]
-        record['features'] = data[2]
-        record['description'] = data[3]
-        record['price'] = data[4]
-        record['categories'] = data[5]
-        reviews='\n'.join(data[6:])
-        doc = Document(
-            page_content=reviews, # Remove this key 
-            metadata=record # Use the 'parent_asin' entry as metadata
-        )
-        documents.append(doc)
+def run_query_loop(retriever: BaseRetriever, llm: BaseChatModel, prompt_template: ChatPromptTemplate):
+    print("Enter a query, or type 'exit' / 'quit' / press Enter on an empty line to stop.")
+    while True:
+        try:
+            query = input("Query: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nStopping query loop.")
+            break
 
+        if not query or query.lower() in {"exit", "quit"}:
+            print("Stopping query loop.")
+            break
+
+        response = lcel_pipeline(query, retriever, llm, prompt_template)
+        print("\nResponse:\n")
+        print(response)
+        print("\n" + "=" * 80 + "\n")
+
+if __name__ == '__main__':
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
     )
-    split_docs = text_splitter.split_documents(documents)
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectorstore = FAISS.from_documents(split_docs, embeddings)
-
-    retriever = get_retriever(vectorstore, query)
+    embeddings = build_embeddings()
+    faiss_index_dir = Path("models/faiss_index")
+    # Asked GPT: how to adjust the script to only construct corpus if we do not have the FAISS index?
+    vector_store = get_vector_store(
+        embeddings=embeddings,
+        faiss_index_dir=faiss_index_dir,
+        corpus_builder=lambda: construct_corpus(
+            text_splitter=text_splitter,
+            threshold=20000
+        )
+    )
+    retriever = get_retriever(vector_store)
     llm = OllamaLLM(
         model="qwen3.5:2b",
         model_kwargs={
@@ -91,4 +119,6 @@ if __name__ == '__main__':
             "top_p": 0.8
         }
     )
-    print(lcel_pipeline(query, retriever, llm, build_prompt()))
+    prompt_template = build_prompt()
+    # Asked GPT: How to enable user to keep specifying query until they are done?
+    run_query_loop(retriever, llm, prompt_template)
