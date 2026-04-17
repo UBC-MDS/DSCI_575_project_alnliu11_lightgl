@@ -10,10 +10,14 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
+from pathlib import Path
 from prompt import build_prompt
+from utils import construct_corpus
+from semantic import get_vector_store
 
 def get_retriever(vectorstore, query):
     # Adopted from Milestone 2 spec.
+    print("Getting retriever...")
     return vectorstore.as_retriever(
         search_type="similarity",
         search_kwargs={"k": 5} # Fetch 5 most similar documents
@@ -42,6 +46,7 @@ def lcel_pipeline(query: str,
     # individual functions, but show me what functions should be passed and
     # what each of them should do.
     # What are the types of each of these arguments?
+    print("Running RAG Chain...")
     rag_chain = (
         RunnableParallel({
             "context": retriever | build_context,
@@ -56,33 +61,20 @@ def lcel_pipeline(query: str,
 
 if __name__ == '__main__':
     query = "What is the best rated skateboard?"
-    merged_df = pd.read_csv('data/processed/merged.csv')
-    data_dicts = merged_df.to_dict(orient="records")
-    documents = list()
-    for record in data_dicts:
-        data = record.pop("full_content").split('|')
-        record['product_title'] = data[0]
-        record['rating'] = data[1]
-        record['features'] = data[2]
-        record['description'] = data[3]
-        record['price'] = data[4]
-        record['categories'] = data[5]
-        reviews='\n'.join(data[6:])
-        doc = Document(
-            page_content=reviews, # Remove this key 
-            metadata=record # Use the 'parent_asin' entry as metadata
-        )
-        documents.append(doc)
-
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
     )
-    split_docs = text_splitter.split_documents(documents)
+    print("Getting embeddings...")
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectorstore = FAISS.from_documents(split_docs, embeddings)
-
-    retriever = get_retriever(vectorstore, query)
+    faiss_index_dir = Path("models/faiss_index")
+    # Asked GPT: how to adjust the script to only construct corpus if we do not have the FAISS index?
+    vector_store = get_vector_store(
+        embeddings=embeddings,
+        faiss_index_dir=faiss_index_dir,
+        corpus_builder=lambda: construct_corpus(text_splitter)
+    )
+    retriever = get_retriever(vector_store, query)
     llm = OllamaLLM(
         model="qwen3.5:2b",
         model_kwargs={

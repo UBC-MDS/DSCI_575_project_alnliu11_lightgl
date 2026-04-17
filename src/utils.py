@@ -21,11 +21,15 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 data_folder = Path("data/raw")
 data_folder.mkdir(parents=True, exist_ok=True)
 
+processed_data_folder = Path("data/processed")
+processed_data_folder.mkdir(parents=True, exist_ok=True)
+processed_data_path = processed_data_folder / "merged.csv"
+
 def remove_unwanted_keys(unwanted_keys, data):
     for key in unwanted_keys:
         data.pop(key, None)
 
-def assemble_product_info(threshold = 200):
+def assemble_product_info(threshold = 20000):
     product_count = 1
     product_list = list()
     parent_asin_set = set()
@@ -45,28 +49,22 @@ def assemble_product_info(threshold = 200):
             data['description'] = ' '.join(data['description'])
             data['categories'] = ' '.join(data['categories'])
 
-            # Merge all contents
-            # Asked Gemini: How to merge multiple items in Python dict to one item and avoid copying the same string too many times?
-            parts = [str(data.get(k, "")) for k in merged_keys]
-            data["merged_content"] = " | ".join(parts)
-            remove_unwanted_keys(merged_keys, data)
-
             # Add to product
             product_list.append(data)
             parent_asin_set.add(data['parent_asin'])
 
             # Check with threshold
-            
             product_count += 1
             
             if product_count >= threshold:
                 break
-            elif product_count % 100 == 0:
+            elif product_count % 5000 == 0:
                 print(f"Processing Product #{product_count}")
     return pd.DataFrame(product_list), parent_asin_set
 
 def assemble_reviews_info(parent_asin_set):
     # Identify the corresponding review data
+    review_count = 1
     review_path = data_folder / "Sports_and_Outdoors.jsonl.gz"
     review_list = list()
     unwanted_keys = ['rating', 'images', 'images', 'asin', 'user_id', 'timestamp', 'helpful_vote', 'verified_purchase']
@@ -84,50 +82,55 @@ def assemble_reviews_info(parent_asin_set):
 
             # Merge all contents
             parts = [str(data.get(k, "")) for k in merged_keys]
-            data["merged_content"] = " | ".join(parts)
+            data["review"] = " | ".join(parts)
             remove_unwanted_keys(merged_keys, data)
 
             # Add to product
             review_list.append(data)
+
+            review_count += 1
+
+            if review_count % 10000 == 0:
+                print(f"Processing Review #{review_count}")
     
     reviews_df = pd.DataFrame(review_list)
     # Asked Gemini: How to group by the same key in dataframe and concatenate the all the strings in one column?
-    reviews_df = reviews_df.groupby("parent_asin")["merged_content"].agg(" | ".join).reset_index()
+    reviews_df = reviews_df.groupby("parent_asin")["review"].agg(" | ".join).reset_index()
     print(f"Length of reviews_df: {len(reviews_df)}")
     print("Top 5 lines:")
     print(reviews_df.head())
     return reviews_df
 
-def construct_corpus():
-    # Get processed data
-    processed_data_folder = Path("data/processed")
-    processed_data_folder.mkdir(parents=True, exist_ok=True)
-    processed_data_path = processed_data_folder / "merged.csv"
-    merged_df = None
-    if not processed_data_path.exists():
-        print("Getting Product Info...")
-        products_df, parent_asin_set = assemble_product_info()
-        print("Getting Reviews Info...")
-        reviews_df = assemble_reviews_info(parent_asin_set)
-        print("Merging...")
-        merged_df = pd.merge(products_df, reviews_df, on='parent_asin', how='inner')
-        merged_df["full_content"] = merged_df.pop("merged_content_x").astype(str) + " | " + merged_df.pop("merged_content_y").astype(str)
-        merged_df.to_csv(processed_data_folder / "merged.csv")
-    else:
-        merged_df = pd.read_csv(processed_data_path, index_col=0)
+def merge_product_and_reviews():
+    print("Getting Product Info...")
+    products_df, parent_asin_set = assemble_product_info()
+    print("Getting Reviews Info...")
+    reviews_df = assemble_reviews_info(parent_asin_set)
+    print("Merging...")
+    merged_df = pd.merge(products_df, reviews_df, on='parent_asin', how='inner')
+    merged_df.to_csv(processed_data_folder / "merged.csv")
+    print("Done!")
 
+def construct_corpus(text_splitter=None):
+    if not processed_data_path.exists():
+        merge_product_and_reviews()
+    merged_df = pd.read_csv(processed_data_path, index_col=0)
     # Create corpus
     print("Constructing corpus...")
     data_dicts = merged_df.to_dict(orient="records")
     docs = [
         Document(
-            page_content=record.pop("full_content"), # Remove this key 
+            page_content=record.pop("review"), # Remove this key 
             metadata=record # Use the 'parent_asin' entry as metadata
         ) 
         for record in data_dicts
     ]
-    return docs
+    if text_splitter is not None:
+        print("Splitting Docs...")
+        docs = text_splitter.split_documents(docs)
 
+    print("Done!")
+    return docs
 
 def preprocess_and_tokenize(text):
     """
@@ -148,4 +151,4 @@ def preprocess_and_tokenize(text):
     return preprocessed
 
 if __name__ == '__main__':
-    construct_corpus()
+    merge_product_and_reviews()

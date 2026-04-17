@@ -1,5 +1,6 @@
 from utils import *
 from bm25 import BM25
+from semantic import get_vector_store
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from pathlib import Path
@@ -8,17 +9,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 if __name__ == '__main__':
     topK=5
-    model_folder = Path("models")
-    model_folder.mkdir(parents=True, exist_ok=True)
-    bm25_index_path = model_folder / "bm25_index.joblib"
-    bm25_model = None
-    if bm25_index_path.exists():
-        bm25_model = BM25.from_index(bm25_index_path)
-    else:
-        docs = construct_corpus()
-        bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize)
-        print(f"Saving BM25 Index at {bm25_index_path}...")
-        bm25_model.dump_index(bm25_index_path)
+    docs = construct_corpus()
+    bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize)
 
     queries=['yoga mat 6mm non-slip', 
              'something comfortable for floor stretching', 
@@ -35,21 +27,22 @@ if __name__ == '__main__':
             ]
 
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    faiss_index_dir="faiss_index"
-    vector_store = FAISS.load_local(
-        faiss_index_dir,
-        embeddings,
-        allow_dangerous_deserialization=True
-    )
+    faiss_index_dir = Path("models/faiss_index")
+    vector_store = get_vector_store(embeddings, faiss_index_dir, documents=docs)
 
     metrics=[]
-    for q in queries[:10]: 
+    for q in queries[:5]: 
         semantic_results=vector_store.similarity_search(q, k=topK)
         bm25_results=bm25_model.retrieve(q)
+        print(bm25_model.retrieve_with_scores(q))
+        break
         for i in range(topK): 
             metrics.append({'Query': q, 'Semantic': semantic_results[i].page_content.split('|')[0], 'BM25': bm25_results[i].page_content.split('|')[0]})
     df_metrics = pd.DataFrame(metrics)
+    #print(df_metrics)
 
     results_folder = Path("results")
     results_folder.mkdir(parents=True, exist_ok=True)
+    #metrics_path = Path("../results/metrics.csv")
     df_metrics.to_csv(results_folder/'metrics.csv')
+    #print(bm25_model.retrieve("Wheels"))
