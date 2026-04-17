@@ -92,10 +92,8 @@ if __name__ == '__main__':
     hybrid_retriever=hybrid_RAG(split_docs, vectorstore)
 
     retriever = get_retriever(vectorstore, query)
-    #llm = OllamaLLM(
-    #    model="qwen3.5:2b",
-    # llm = Llama(
-    #     model="qwen3.5-0.8b",
+    # llm = OllamaLLM(
+    #     model="qwen3.5:2b",
     #     model_kwargs={
     #         "repeat_penalty": 1.15,
     #         "temperature": 0.7,

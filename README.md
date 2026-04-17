@@ -34,7 +34,7 @@ graph LR
 
 ## Development Setup
 
-### To get Ollama Running Locally
+### Option 1: To get Ollama Running Locally
 1. Download: Go to <ollama.com/download> and install the Ollama for your OS.
 2. In your CLI, download the `qwen3.5:2b` model by running
 ```bash
@@ -43,6 +43,12 @@ ollama pull qwen3.5:2b
 3. Verify it works by running it and trying a small prompt:
 ```bash
 ollama run qwen3.5:2b --think=false
+```
+
+### Option 2: Alternatively to get huggingface Running Locally with a Smaller Model
+After getting development environment `575-project-query` ready
+```bash
+huggingface-cli download Qwen/Qwen3.5-0.8B --local-dir ./qwen3.5-0.8b
 ```
 
 ### Get Development Environment Ready
