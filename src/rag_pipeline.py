@@ -7,11 +7,19 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_community.llms import LlamaCpp
 from langchain_ollama import OllamaLLM
 from pathlib import Path
 from prompt import build_prompt
 from utils import construct_corpus
 from semantic import build_embeddings, get_vector_store
+
+from langchain_huggingface import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+#from langchain_community.retrievers import BM25Retriever
+from hybrid import *
+from bm25 import BM25
 
 def get_retriever(vectorstore):
     # Adopted from Milestone 2 spec.
@@ -99,6 +107,7 @@ if __name__ == '__main__':
         chunk_size=500,
         chunk_overlap=100
     )
+
     embeddings = build_embeddings()
     faiss_index_dir = Path("models/faiss_index")
     # Asked GPT: how to adjust the script to only construct corpus if we do not have the FAISS index?
@@ -110,6 +119,11 @@ if __name__ == '__main__':
             threshold=20000
         )
     )
+
+    bm25_index_dir=Path("models/bm25_index")
+    bm25=BM25.from_index(bm25_index_dir)
+    hybrid_retriever=hybrid_RAG(bm25, vectorstore)
+
     retriever = get_retriever(vector_store)
     llm = OllamaLLM(
         model="qwen3.5:2b",
@@ -119,6 +133,37 @@ if __name__ == '__main__':
             "top_p": 0.8
         }
     )
+
+    #Adopted from Gemini
+    model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
+
+    # 1. Load the tokenizer and model using Transformers
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        device_map="auto",      # This handles your Mac's GPU/MPS automatically
+        torch_dtype="auto"
+    )
+    
+    # 2. Create a Transformers pipeline
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=512,
+        temperature=0.7,
+        top_p=0.8,
+        repetition_penalty=1.15
+    )
+    
+    # 3. Wrap it for LangChain
+    llm_lite = HuggingFacePipeline(pipeline=pipe)
+
     prompt_template = build_prompt()
     # Asked GPT: How to enable user to keep specifying query until they are done?
-    run_query_loop(retriever, llm, prompt_template)
+    #run_query_loop(retriever, llm, prompt_template)
+    print('\nSemantic retriever:\n')
+    run_query_loop(retriever, llm_lite, prompt_template)
+
+    print('\nHybrid retriever:\n')
+    run_query_loop(hybrid_retriever, llm_lite, prompt_template)

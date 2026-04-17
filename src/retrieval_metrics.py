@@ -39,10 +39,8 @@ if __name__ == '__main__':
         for i in range(topK): 
             metrics.append({'Query': q, 'Semantic': semantic_results[i].page_content.split('|')[0], 'BM25': bm25_results[i].page_content.split('|')[0]})
     df_metrics = pd.DataFrame(metrics)
-    #print(df_metrics)
 
     results_folder = Path("results")
     results_folder.mkdir(parents=True, exist_ok=True)
-    #metrics_path = Path("../results/metrics.csv")
     df_metrics.to_csv(results_folder/'metrics.csv')
     #print(bm25_model.retrieve("Wheels"))
