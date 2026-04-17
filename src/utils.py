@@ -60,7 +60,17 @@ def assemble_product_info(threshold = 20000):
                 break
             elif product_count % 5000 == 0:
                 print(f"Processing Product #{product_count}")
-    return pd.DataFrame(product_list), parent_asin_set
+
+    # Fixed Columns with Nulls or empty strings
+    product_df = pd.DataFrame(product_list)
+    print("Fixing Null Values...")
+    null_columns = ['features', 'description', 'categories']
+    for col in null_columns:
+        product_df.loc[:, col] = product_df.loc[:, col].fillna("Missing")
+        product_df.loc[product_df[col] == '', col] = "Missing"
+    product_df['price'] = product_df['price'].fillna(-1.0).astype(float)
+
+    return product_df, parent_asin_set
 
 def assemble_reviews_info(parent_asin_set):
     # Identify the corresponding review data
@@ -101,9 +111,9 @@ def assemble_reviews_info(parent_asin_set):
     print(reviews_df.head())
     return reviews_df
 
-def merge_product_and_reviews():
+def merge_product_and_reviews(threshold = 20000):
     print("Getting Product Info...")
-    products_df, parent_asin_set = assemble_product_info()
+    products_df, parent_asin_set = assemble_product_info(threshold)
     print("Getting Reviews Info...")
     reviews_df = assemble_reviews_info(parent_asin_set)
     print("Merging...")
@@ -111,10 +121,12 @@ def merge_product_and_reviews():
     merged_df.to_csv(processed_data_folder / "merged.csv")
     print("Done!")
 
-def construct_corpus(text_splitter=None):
+def construct_corpus(text_splitter=None, threshold = 20000):
+    # Create Merged data if not existent
     if not processed_data_path.exists():
-        merge_product_and_reviews()
+        merge_product_and_reviews(threshold=threshold)
     merged_df = pd.read_csv(processed_data_path, index_col=0)
+    
     # Create corpus
     print("Constructing corpus...")
     data_dicts = merged_df.to_dict(orient="records")
