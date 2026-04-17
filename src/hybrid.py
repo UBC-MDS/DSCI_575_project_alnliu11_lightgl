@@ -1,11 +1,13 @@
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever
 
-def hybrid_RAG(docs, vectorstore): 
-    bm25_retriever = BM25Retriever.from_documents(
-            docs,  # docs is a Langchain Document objects
-            k=5    # returns top 5 results
-            )
+def hybrid_RAG(bm25, vectorstore): 
+    # bm25_retriever = BM25Retriever.from_documents(
+    #         docs,  # docs is a Langchain Document objects
+    #         k=5    # returns top 5 results
+    #         )
+    bm25_retriever=bm25.retriever
+    
     # Initialize individual retrievers
     vector_retriever = vectorstore.as_retriever()
 

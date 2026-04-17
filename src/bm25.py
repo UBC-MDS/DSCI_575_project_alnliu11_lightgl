@@ -6,15 +6,24 @@ class BM25:
         self.retriever = retriever
     
     @classmethod
-    def from_documents(cls, docs, k, func):
+    def from_documents(cls, docs, k, func, save_path):
         retriever = BM25Retriever.from_documents(
             docs,
             k=k,
             preprocess_func=func,
         )
+        dump_index(save_path)
         return cls(retriever)
 
     @classmethod
+    # def from_index(cls, path, docs, k, func):
+    #     if path.exists():
+    #         print("Loading BM25 Index...")
+    #         retriever = joblib.load(path)
+    #     else:
+    #         retriever = from_documents(cls, docs, k, func).retriever
+    #         dump_index(path)
+    #     return cls(retriever)
     def from_index(cls, path):
         retriever = joblib.load(path)
         return cls(retriever)
