@@ -10,12 +10,14 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 #from langchain_ollama import OllamaLLM
-#from llama_cpp import Llama
 from langchain_community.llms import LlamaCpp
 from prompt import build_prompt
 
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+from langchain_community.retrievers import BM25Retriever
+from hybrid import *
 
 def get_retriever(vectorstore, query):
     # Adopted from Milestone 2 spec.
@@ -87,6 +89,8 @@ if __name__ == '__main__':
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = FAISS.from_documents(split_docs, embeddings)
 
+    hybrid_retriever=hybrid_RAG(split_docs, vectorstore)
+
     retriever = get_retriever(vectorstore, query)
     #llm = OllamaLLM(
     #    model="qwen3.5:2b",
@@ -98,17 +102,8 @@ if __name__ == '__main__':
     #         "top_p": 0.8
     #     }
     # )
-    
-    # llm = LlamaCpp(
-    #     model_path="./qwen3.5:2b/",
-    #     temperature=0.7,
-    #     top_p=0.8,
-    #     repeat_penalty=1.15,
-    #     n_ctx=2048,
-    #     n_gpu_layers=-1, # Vital for Mac performance
-    #     streaming=False
-    # )
 
+    #Adopted from Gemini
     model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
 
     # 1. Load the tokenizer and model using Transformers
@@ -133,4 +128,5 @@ if __name__ == '__main__':
     # 3. Wrap it for LangChain
     llm = HuggingFacePipeline(pipeline=pipe)
     
-    print(lcel_pipeline(query, retriever, llm, build_prompt()))
+    print('Semantic retriever: \n', lcel_pipeline(query, retriever, llm, build_prompt()))
+    print('Hybrid retriever: \n', lcel_pipeline(query, hybrid_retriever, llm, build_prompt()))
