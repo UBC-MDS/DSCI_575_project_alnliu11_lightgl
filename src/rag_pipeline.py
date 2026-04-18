@@ -8,7 +8,7 @@ from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import LlamaCpp
-from langchain_ollama import OllamaLLM
+#from langchain_ollama import OllamaLLM
 from pathlib import Path
 from prompt import build_prompt
 from utils import construct_corpus, preprocess_and_tokenize
@@ -18,16 +18,15 @@ from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 import traceback
 
-#from langchain_community.retrievers import BM25Retriever
 from hybrid import hybrid_RAG
 from bm25 import BM25
 
-def get_retriever(vectorstore):
+def get_semantic_retriever(vectorstore, topK):
     # Adopted from Milestone 2 spec.
     print("Getting retriever...")
     return vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": 5} # Fetch 5 most similar documents
+        search_kwargs={"k": topK} # Fetch 5 most similar documents
     )
 
 def build_context(docs):
@@ -62,7 +61,7 @@ def build_context(docs):
         item_str = (
             f"Product ASIN: {asin}\n"
             f"Product Title: {title}\n"
-            f"Rating: {rating_display}/5\n"
+            f"Rating: {rating_display}\n"
             f"Features: {features}\n"
             f"Description: {desc}\n"
             f"Price: {price_display}\n"
@@ -161,7 +160,7 @@ def run_query_loop(retriever: BaseRetriever, llm: BaseChatModel, prompt_template
         print(response)
         print("\n" + "=" * 80 + "\n")
 
-if __name__ == '__main__':
+def get_retrievers(topK): 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
@@ -179,47 +178,57 @@ if __name__ == '__main__':
         faiss_index_dir=faiss_index_dir,
         documents=docs
     )
-    topK = 5
     bm25_index_dir = Path("models/bm25_index")
     bm25 = BM25.from_index_or_documents(docs, topK, preprocess_and_tokenize, bm25_index_dir)
-    semantic_retriever = get_retriever(vector_store)
+    semantic_retriever = get_semantic_retriever(vector_store, topK)
     hybrid_retriever = hybrid_RAG(bm25.retriever, semantic_retriever)
 
-    llm = OllamaLLM(
-        model="qwen3.5:2b",
-        model_kwargs={
-            "repeat_penalty": 1.15,
-            "temperature": 0.7,
-            "top_p": 0.8
-        }
-    )
+    return bm25.retriever, semantic_retriever, hybrid_retriever
+
+def get_llm_prompt(): 
+    # llm = OllamaLLM(
+    #     model="qwen3.5:2b",
+    #     model_kwargs={
+    #         "repeat_penalty": 1.15,
+    #         "temperature": 0.7,
+    #         "top_p": 0.8
+    #     }
+    # )
 
     #Adopted from Gemini
-    # model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
+    model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
 
     # # 1. Load the tokenizer and model using Transformers
-    # tokenizer = AutoTokenizer.from_pretrained(model_id)
-    # model = AutoModelForCausalLM.from_pretrained(
-    #     model_id,
-    #     device_map="auto",      # This handles your Mac's GPU/MPS automatically
-    #     torch_dtype="auto"
-    # )
+    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        device_map="auto",      # This handles your Mac's GPU/MPS automatically
+        torch_dtype="auto"
+    )
     
     # # 2. Create a Transformers pipeline
-    # pipe = pipeline(
-    #     "text-generation",
-    #     model=model,
-    #     tokenizer=tokenizer,
-    #     max_new_tokens=512,
-    #     temperature=0.7,
-    #     top_p=0.8,
-    #     repetition_penalty=1.15
-    # )
+    pipe = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=512,
+        temperature=0.7,
+        top_p=0.8,
+        repetition_penalty=1.15
+    )
     
     # # 3. Wrap it for LangChain
-    # llm_lite = HuggingFacePipeline(pipeline=pipe)
+    llm = HuggingFacePipeline(pipeline=pipe)
 
     prompt_template = build_prompt()
+    return llm, prompt_template
+
+if __name__ == '__main__':
+
+    bm25_retriever, semantic_retriever, hybrid_retriever=get_retrievers(5)
+
+    llm, prompt_template=get_llm_prompt()
+    
     # Asked GPT: How to enable user to keep specifying query until they are done?
     # print('\nSemantic retriever:\n')
     # run_query_loop(semantic_retriever, llm, prompt_template)
