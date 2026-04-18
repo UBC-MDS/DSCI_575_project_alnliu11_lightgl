@@ -73,7 +73,7 @@ def assemble_product_info(threshold = 20000):
 
     return product_df, parent_asin_set
 
-def assemble_reviews_info(parent_asin_set, threshold = 50):
+def assemble_reviews_info(parent_asin_set, threshold = 20):
     # Identify the corresponding review data
     asin_reviews_count = Counter()
     review_count = 1
