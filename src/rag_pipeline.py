@@ -2,7 +2,7 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_core.runnables import RunnableParallel, RunnablePassthrough  
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough, RunnableLambda  
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.retrievers import BaseRetriever
 from langchain_core.language_models import BaseChatModel
@@ -31,24 +31,12 @@ def get_semantic_retriever(vectorstore, topK):
 
 def build_context(docs):
     context_parts = list()
-    parent_asin = set()
-    max_docs = 3
-    for i, doc in enumerate(docs):
-        if i > max_docs:
-            break
-
+    print(len(docs))
+    for doc in docs:
         # Provide alternative values in case previous preprocessing falls through
         asin = doc.metadata.get('parent_asin', 'N/A')
-        # Eliminate duplicated docs
-        if asin in parent_asin:
-            continue
-        else:
-            parent_asin.add(asin)
-        
         title = doc.metadata.get('title', 'No Title Provided')
-        features = doc.metadata.get('features', 'No features listed')
-        desc = doc.metadata.get('description', 'No description available')
-        cats = doc.metadata.get('categories', 'N/A')
+        reviews = doc.page_content
 
         # Asked GPT something like: How can LLM interpret query like "Find me this kind of product under $15"?
         # Deal with missing price
@@ -62,10 +50,8 @@ def build_context(docs):
             f"Product ASIN: {asin}\n"
             f"Product Title: {title}\n"
             f"Rating: {rating_display}\n"
-            f"Features: {features}\n"
-            f"Description: {desc}\n"
+            f"Reviews: {reviews}\n"
             f"Price: {price_display}\n"
-            f"Categories: {cats}"
         )
         context_parts.append(item_str)
 
@@ -75,7 +61,7 @@ def lcel_pipeline(query: str,
     retriever: BaseRetriever, 
     llm: BaseChatModel, 
     prompt_template: ChatPromptTemplate,
-    max_docs=3
+    top_k=3
 ):
     # Asked GPT:
     # Suppose I want to wrap this as a function, can you show me a list of statements
@@ -86,7 +72,10 @@ def lcel_pipeline(query: str,
     print("Running RAG Chain...")
     rag_chain = (
         RunnableParallel({
-            "context": retriever | build_context,
+            "context": (retriever
+                        | RunnableLambda(lambda docs: docs[:top_k])
+                        | build_context
+                        ),
             "question": RunnablePassthrough()
         })
         | prompt_template
