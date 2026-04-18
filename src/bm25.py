@@ -1,18 +1,25 @@
 from langchain_community.retrievers import BM25Retriever
 import joblib
+from pathlib import Path
 
 class BM25:
     def __init__(self, retriever):
         self.retriever = retriever
     
+    @staticmethod
+    def dump_index(retriever, dir_path):
+        dir_path.mkdir(parents=True, exist_ok=True)
+        return joblib.dump(retriever, dir_path / "bm25_index.joblib")
+
     @classmethod
-    def from_documents(cls, docs, k, func, save_path):
+    def from_documents(cls, docs, k, func, save_path=None):
         retriever = BM25Retriever.from_documents(
             docs,
             k=k,
             preprocess_func=func,
         )
-        cls(retriever).dump_index(save_path)
+        if save_path is not None:
+            cls.dump_index(retriever, save_path)
         return cls(retriever)
 
     @classmethod
@@ -24,9 +31,18 @@ class BM25:
     #         retriever = from_documents(cls, docs, k, func).retriever
     #         cls(retriever).dump_index(path)
     #     return cls(retriever)
-    def from_index(cls, path):
-        retriever = joblib.load(path)
+    def from_index(cls, index_path):
+        if index_path.is_dir():
+            index_path = index_path / "bm25_index.joblib"
+        retriever = joblib.load(index_path)
         return cls(retriever)
+    
+    @classmethod
+    def from_index_or_documents(cls, docs, k, func, index_path):
+        if index_path.exists():
+            return cls.from_index(index_path)
+
+        return cls.from_documents(docs, k, func, save_path=index_path)
             
     def retrieve(self, query):
         return self.retriever.invoke(query)
@@ -43,7 +59,3 @@ class BM25:
             {"doc": docs[i], "score": float(scores[i])}
             for i in top_idx
         ]
-    
-    def dump_index(self, path):
-        path.mkdir(parents=True, exist_ok=True)
-        return joblib.dump(self.retriever, path / "bm25_index.joblib")
