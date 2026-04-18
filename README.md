@@ -25,7 +25,7 @@ And the retrieval system is based on two algorithms:
 graph LR
     Query[User Query] --> Ret[Ensemble Retriever]
     Ret -- documents --> Lambda[Retrieves Top Three]
-    Lambda --> Context[`build_context`]
+    Lambda --> Context[build_context]
     Query --> Prompt[System Prompt]
     Context --> Prompt
     Prompt --> LLM[Qwen 3.5 0.8B]
