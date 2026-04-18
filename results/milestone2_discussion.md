@@ -107,6 +107,10 @@ This prompt works well, because the LLM did bold the retrieved information to sp
 
 ## 5.1 Qualitative Evaluation for Hybrid RAG Workflow
 ### Query 1: yoga mat 6mm non-slip
+Rating:
+- Accuracy: yes, it does factually answer based on the information retrieved.
+- Completeness: Yes, it does cover all aspects of the query, including yoga mat, 6mm, and non-slip
+- Fluency: Yes, it is fluent.
 ```
 Response:
 
@@ -127,6 +131,10 @@ However, the context lists two products that are **non-slip** and intended for *
 *Note: While the "6mm" metric is not available in the context, the above items are the closest matches for the requested "yoga mat, non-slip" attributes in the provided documents.*
 ```
 ### Query 2: something comfortable for floor stretching
+Rating:
+- Accuracy: yes, it does find some relevant to comfortable floor stretching
+- Completeness: Yes, it does cover the query sufficiently and cited relevant text.
+- Fluency: Yes, the answer is fluent and makes sense.
 ```
 Response:
 
@@ -138,3 +146,29 @@ Based on the provided context, here is the best match for a product suitable for
 *   **Relevance:** This product is explicitly designed for "stretching and floor exercises." It features "high quality padding" for comfort ("comfortable space for stretching") and has a thickness of 2" which is suitable for a floor workout. It is larger than standard mats (76" x 36") and is positioned as a high-quality alternative for stretching and floor work.
 *   **Comparison:** Unlike the other items, this specific mat explicitly links "comfortable space for stretching" with "floor exercises," which directly addresses the user's query. The Precor StretchTrainer (B0029KL3S2) is more of a commercial equipment piece than a simple "floor stretching" mat, and the Harbinger mat (B00NIGVNI6) is larger (72x24 inches) but does not explicitly mention "comfortable" as strongly in the provided description.
 ```
+
+### Query 3: waterproof 2 person camping tent
+Rating:
+- Accuracy: yes, it does find some some camping tent that are waterproof.
+- Completeness: No, the response did not address the capacity of the tent (i.e. 2 person)
+- Fluency: Yes, the answer is fluent and can understand the nuances of waterproof and water resistant.
+```
+Response:
+
+Based on the reviews for product ASIN B09QLZ844S, this tent is not waterproof. Reviews indicate the product is "water resistant" and not waterproof (e.g., "Not waterproof", "water all over the side of the tent").
+
+- **Product ASIN:** B09QLZ844S
+- **Supporting Review Content:** Reviews explicitly state, "Not waterproof," "Tent became totally soaked with puddles," and "It may be water resistant SOMEHOW" while still indicating the tent is not waterproof for rain protection.
+```
+### Query 4: what is the best portable yoga mat for a tall beginner on a budget
+Rating:
+- Accuracy: no, it does not generate any response
+- Completeness: No response.
+- Fluency: No response.
+```
+Response:
+
+```
+Overall the evaluation is quite on point and performs relatively well for such a small model.
+2 limitation includes slow speed and cannot take into too much tokens.
+Suggest to improve performance with a larger LLM models.

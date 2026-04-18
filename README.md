@@ -23,26 +23,28 @@ And the retrieval system is based on two algorithms:
 ### RAG Pipeline:
 ```mermaid
 graph LR
-    Query[User Query] --> Ret[FAISS-based Semantic Search Retriever]
-    Ret -- documents --> Context[`build_context`]
+    Query[User Query] --> Ret[Ensemble Retriever]
+    Ret -- documents --> Lambda[Retrieves Top Three]
+    Lambda --> Context[`build_context`]
     Query --> Prompt[System Prompt]
     Context --> Prompt
-    Prompt --> LLM[Qwen 3.5 2B]
+    Prompt --> LLM[Qwen 3.5 0.8B]
     LLM --> Parser[StrOutputParser]
     Parser --> Response[Response]
 ```
+Here we use Ensemble Retriever that combines the retrieval results from BM25 and FAISS-based semantics search, each retrieved up to three documents. It uses the given weights to rank a maximum of six documents. The pipeline extracts top three of the documents, and the context is built with documents' metadata of product title, parent asin, rating, price and page content of product reviews. The context was then embedded into the system prompt and passed to LLM (Qwen 3.5 0.8B). The output is then parsed by the parser and returned to the user as a response.
 
 ## Development Setup
 
 ### Option 1: To get Ollama Running Locally
 1. Download: Go to <ollama.com/download> and install the Ollama for your OS.
-2. In your CLI, download the `qwen3.5:2b` model by running
+2. In your CLI, download the `qwen3.5:0.8b` model by running
 ```bash
-ollama pull qwen3.5:2b
+ollama pull qwen3.5:0.8b
 ```
 3. Verify it works by running it and trying a small prompt:
 ```bash
-ollama run qwen3.5:2b --think=false
+ollama run qwen3.5:0.8b --think=false
 ```
 
 ### Option 2: Alternatively to get huggingface Running Locally with a Smaller Model
@@ -72,8 +74,6 @@ conda activate 575-project-query
 
 ```bash
 python src/download_data.py
-python src/utils.py
-python src/retrieval_metrics.py
 python src/rag_pipeline.py
 
 # Might take a while to load
