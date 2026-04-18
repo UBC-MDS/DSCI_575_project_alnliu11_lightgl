@@ -10,7 +10,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 if __name__ == '__main__':
     topK=5
     docs = construct_corpus()
-    bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize)
+    bm25_index_dir=Path("models/bm25_index")
+    bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize, bm25_index_dir)
 
     queries=['yoga mat 6mm non-slip', 
              'something comfortable for floor stretching', 

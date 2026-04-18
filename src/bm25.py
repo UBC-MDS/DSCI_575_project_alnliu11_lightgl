@@ -12,7 +12,7 @@ class BM25:
             k=k,
             preprocess_func=func,
         )
-        dump_index(save_path)
+        cls(retriever).dump_index(save_path)
         return cls(retriever)
 
     @classmethod
@@ -22,7 +22,7 @@ class BM25:
     #         retriever = joblib.load(path)
     #     else:
     #         retriever = from_documents(cls, docs, k, func).retriever
-    #         dump_index(path)
+    #         cls(retriever).dump_index(path)
     #     return cls(retriever)
     def from_index(cls, path):
         retriever = joblib.load(path)
@@ -45,4 +45,5 @@ class BM25:
         ]
     
     def dump_index(self, path):
-        return joblib.dump(self.retriever, path)
+        path.mkdir(parents=True, exist_ok=True)
+        return joblib.dump(self.retriever, path / "bm25_index.joblib")
