@@ -1,5 +1,6 @@
 from utils import *
 from bm25 import BM25
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from semantic import get_vector_store
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -9,9 +10,16 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 if __name__ == '__main__':
     topK=5
-    docs = construct_corpus()
-    bm25_index_dir=Path("models/bm25_index")
-    bm25_model = BM25.from_documents(docs, topK, preprocess_and_tokenize, bm25_index_dir)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500,
+        chunk_overlap=100
+    )
+    docs = construct_corpus(
+        text_splitter=text_splitter,
+        threshold=20000
+    )
+    bm25_index_dir = Path("models/bm25_index")
+    bm25_model = BM25.from_index_or_documents(docs, topK, preprocess_and_tokenize, bm25_index_dir)
 
     queries=['yoga mat 6mm non-slip', 
              'something comfortable for floor stretching', 

@@ -9,6 +9,7 @@ from pathlib import Path
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from langchain_core.documents import Document
+from collections import Counter
 
 nltk.download("punkt_tab")
 nltk.download('stopwords')
@@ -72,8 +73,9 @@ def assemble_product_info(threshold = 20000):
 
     return product_df, parent_asin_set
 
-def assemble_reviews_info(parent_asin_set):
+def assemble_reviews_info(parent_asin_set, threshold = 50):
     # Identify the corresponding review data
+    asin_reviews_count = Counter()
     review_count = 1
     review_path = data_folder / "Sports_and_Outdoors.jsonl.gz"
     review_list = list()
@@ -84,7 +86,11 @@ def assemble_reviews_info(parent_asin_set):
         for line in f:
             data = json.loads(line)
             # Check if desired parent_asin
-            if data.get("parent_asin") not in parent_asin_set:
+            parent_asin = data.get("parent_asin")
+            if parent_asin not in parent_asin_set:
+                continue
+            elif asin_reviews_count[parent_asin] == threshold:
+                # Control at the threshold # of reviews
                 continue
 
             # Remove unwanted keys
@@ -97,8 +103,8 @@ def assemble_reviews_info(parent_asin_set):
 
             # Add to product
             review_list.append(data)
-
             review_count += 1
+            asin_reviews_count[parent_asin] += 1
 
             if review_count % 10000 == 0:
                 print(f"Processing Review #{review_count}")
