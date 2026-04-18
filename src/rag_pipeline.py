@@ -32,11 +32,12 @@ def get_retriever(vectorstore):
 
 def build_context(docs):
     context_parts = list()
+    print(len(docs))
     for doc in docs:
         # Provide alternative values in case previous preprocessing falls through
         asin = doc.metadata.get('parent_asin', 'N/A')
         title = doc.metadata.get('title', 'No Title Provided')
-        desc = doc.metadata.get('description', 'No description available')
+        reviews = doc.page_content
 
         # Asked GPT something like: How can LLM interpret query like "Find me this kind of product under $15"?
         # Deal with missing price
@@ -50,7 +51,7 @@ def build_context(docs):
             f"Product ASIN: {asin}\n"
             f"Product Title: {title}\n"
             f"Rating: {rating_display}/5\n"
-            f"Description: {desc}\n"
+            f"Reviews: {reviews}\n"
             f"Price: {price_display}\n"
         )
         context_parts.append(item_str)
@@ -175,6 +176,7 @@ if __name__ == '__main__':
 
     llm = OllamaLLM(
         model="qwen3.5:2b",
+        num_ctx=4096,
         model_kwargs={
             "repeat_penalty": 1.15,
             "temperature": 0.7,
