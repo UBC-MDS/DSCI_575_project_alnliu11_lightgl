@@ -28,30 +28,13 @@ graph LR
     Lambda --> Context[build_context]
     Query --> Prompt[System Prompt]
     Context --> Prompt
-    Prompt --> LLM[Qwen 3.5 0.8B]
+    Prompt --> LLM[LLM]
     LLM --> Parser[StrOutputParser]
     Parser --> Response[Response]
 ```
-Here we use Ensemble Retriever that combines the retrieval results from BM25 and FAISS-based semantics search, each retrieved up to three documents. It uses the given weights to rank a maximum of six documents. The pipeline extracts top three of the documents, and the context is built with documents' metadata of product title, parent asin, rating, price and page content of product reviews. The context was then embedded into the system prompt and passed to LLM (Qwen 3.5 0.8B). The output is then parsed by the parser and returned to the user as a response.
+Here we use Ensemble Retriever that combines the retrieval results from BM25 and FAISS-based semantics search, each retrieved up to three documents. It uses the given weights to rank a maximum of six documents. The pipeline extracts top three of the documents, and the context is built with documents' metadata of product title, parent asin, rating, price and page content of product reviews. The context was then embedded into the system prompt and passed to LLM. Based on the option given, either Qwen 3.5 0.8B or Llama-3.1-8B-Instant will reason and generate an output. The output is then parsed by the parser and returned to the user as a response.
 
 ## Development Setup
-
-### Option 1: To get Ollama Running Locally
-1. Download: Go to <ollama.com/download> and install the Ollama for your OS.
-2. In your CLI, download the `qwen3.5:0.8b` model by running
-```bash
-ollama pull qwen3.5:0.8b
-```
-3. Verify it works by running it and trying a small prompt:
-```bash
-ollama run qwen3.5:0.8b --think=false
-```
-
-### Option 2: Alternatively to get huggingface Running Locally with a Smaller Model
-After getting development environment `575-project-query` ready
-```bash
-huggingface-cli download Qwen/Qwen3.5-0.8B --local-dir ./qwen3.5-0.8b
-```
 
 ### Get Development Environment Ready
 The following pipeline clones the repo, creates a conda environment, downloads and prepares data, builds both keyword-based and semantic search systems, and starts an interactive Streamlit app that enables users to query products:
@@ -72,10 +55,33 @@ Then activate the environment:
 conda activate 575-project-query
 ```
 
+### To get huggingface Running Locally with a Smaller Model
+After getting development environment `575-project-query` ready
+```bash
+huggingface-cli download Qwen/Qwen3.5-0.8B --local-dir ./qwen3.5-0.8b
+```
+### To run the `llama-3.1-8b-instant` Hosted on Grok
+1. Go to the [Groq Console](https://console.groq.com/keys), create a free account, and generate an API key.
+2. Inside the `/src` directory, create an `.env` file and put the API key:
+```
+GROQ_API_KEY=gsk_your_actual_key_here
+```
+
+## Run Model:
+1. Download data:
 ```bash
 python src/download_data.py
-python src/rag_pipeline.py
-
+```
+2. Run RAG pipeline with your choice of model
+With Llama-3.1-8B-Instant:
+```
+python src/rag_pipeline.py --model llama-3.1-8b-instant
+```
+Or with Qwen 3.5 0.8B :
+python src/rag_pipeline.py --model qwen3.5-0.8b
+```
+3. Start app:
+```
 # Might take a while to load
 streamlit run app/app.py
 ```
