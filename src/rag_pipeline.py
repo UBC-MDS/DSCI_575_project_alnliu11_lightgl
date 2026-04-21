@@ -190,18 +190,7 @@ def get_retrievers(topK):
 def get_llm_prompt(model_name):
     load_dotenv()
     llm = None
-    if model_name == 'llama-3.1-8b-instant':
-        print("Using Groq Model...")
-        llm = ChatGroq(
-            model=model_name,
-            max_tokens=512,
-            temperature=0.7,
-            top_p=0.8,
-            model_kwargs={
-                "frequency_penalty": 1.15
-            }
-        )
-    else:
+    if model_name == 'qwen3.5-0.8b':
         print("Using Local Qwen Model...")
         # Adopted from Gemini
         model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
@@ -226,16 +215,28 @@ def get_llm_prompt(model_name):
         
         # # 3. Wrap it for LangChain
         llm = HuggingFacePipeline(pipeline=pipe)
+    else:
+        print("Using Groq Model...")
+        llm = ChatGroq(
+            model=model_name,
+            max_tokens=512,
+            temperature=0.7,
+            top_p=0.8,
+            model_kwargs={
+                "frequency_penalty": 1.15
+            }
+        )
 
     prompt_template = build_prompt()
     return llm, prompt_template
 
 if __name__ == '__main__':
+    # Asked GPT: How to let the user specify different LLMs using command line?
     parser = argparse.ArgumentParser(description="Amazon Product Query")
     parser.add_argument(
         "--model", 
         choices=["llama-3.1-8b-instant", "qwen3.5-0.8b"], 
-        default="qwen3.5-0.8b",
+        default="llama-3.1-8b-instant",
         help="model to use"
     )
     args = parser.parse_args()

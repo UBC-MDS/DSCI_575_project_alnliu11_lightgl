@@ -61,6 +61,7 @@ After getting development environment `575-project-query` ready
 huggingface-cli download Qwen/Qwen3.5-0.8B --local-dir ./qwen3.5-0.8b
 ```
 ### To run the `llama-3.1-8b-instant` Hosted on Grok
+(Asked Gemini for step-by-step guide to use free tier Groq API for RAG)
 1. Go to the [Groq Console](https://console.groq.com/keys), create a free account, and generate an API key.
 2. Inside the `/src` directory, create an `.env` file and put the API key:
 ```
@@ -75,9 +76,10 @@ python src/download_data.py
 2. Run RAG pipeline with your choice of model
 With Llama-3.1-8B-Instant:
 ```
-python src/rag_pipeline.py --model llama-3.1-8b-instant
+python src/rag_pipeline.py
 ```
 Or with Qwen 3.5 0.8B :
+```
 python src/rag_pipeline.py --model qwen3.5-0.8b
 ```
 3. Start app:
