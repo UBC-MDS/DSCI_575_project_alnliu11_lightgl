@@ -100,10 +100,16 @@ def lcel_pipeline(query: str,
         if not response or not str(response).strip():
             print("[DEBUG] Chain completed but returned an empty response.")
         return response
-    except Exception as exc:
-        print(f"[DEBUG] RAG chain failed: {exc}")
+    except Exception as e:
+        print(f"[DEBUG] RAG chain failed: {e}")
         print(traceback.format_exc())
-        raise
+        if "429" in str(e):
+            print("Rate limit hit! Waiting 60 seconds...")
+            import time
+            time.sleep(60)
+            response = rag_chain.invoke(query)
+        else:
+            raise
 
 
 def debug_rag_once(
