@@ -10,6 +10,20 @@ data_folder.mkdir(parents=True, exist_ok=True)
 
 # Asked Gemini how to download data from link to jsonl.gz
 def download_data(url, file_name):
+    """
+    Download the data from the url as the specified file name.
+
+    Parameters
+    ----------
+    url : string
+        data url.
+    file_name : string
+        saved data file name.
+
+    Returns
+    -------
+    None
+    """
     save_path = data_folder / file_name
 
     if save_path.exists():
@@ -27,7 +41,17 @@ def download_data(url, file_name):
     print("Download complete!")
 
 def main():
-    """Downloads data from the web to a local filepath."""
+    """
+    Download the Amazon product reviews data and meta data.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
     data_folder = Path("data/raw")
     data_folder.mkdir(parents=True, exist_ok=True)
 
