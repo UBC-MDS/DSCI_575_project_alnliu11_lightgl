@@ -193,7 +193,7 @@ def get_retrievers(topK):
 
     return bm25.retriever, semantic_retriever, hybrid_retriever
 
-def get_llm_prompt(model_name):
+def get_llm_prompt(model_name=None):
     load_dotenv()
     llm = None
     if model_name == 'qwen3.5-0.8b':
