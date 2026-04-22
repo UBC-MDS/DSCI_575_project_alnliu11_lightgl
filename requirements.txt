@@ -1,0 +1,38 @@
+# Core
+numpy<2
+pandas
+requests
+pyarrow
+joblib
+
+# NLP
+nltk
+spacy
+
+# Vector search / retrieval
+faiss-cpu
+rank-bm25
+
+# PyTorch (CPU)
+torch
+
+# LangChain ecosystem
+langchain-core
+langchain-community
+langchain-huggingface
+langchain-groq
+
+# Embeddings / HF stack (stable versions!)
+transformers==4.41.2
+sentence-transformers==2.7.0
+huggingface_hub>=0.36.0
+tokenizers
+accelerate
+sentencepiece
+
+# Data + env
+python-dotenv
+duckdb
+
+# App
+streamlit

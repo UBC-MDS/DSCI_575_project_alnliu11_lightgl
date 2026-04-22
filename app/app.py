@@ -6,7 +6,8 @@ from langchain_community.vectorstores import FAISS
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", 'src'))
+#sys.path.append(os.path.join(os.path.dirname(__file__), "..", 'src'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.utils import *
 #from src.rag_pipeline import get_retrievers, get_llm_prompt, lcel_pipeline
@@ -14,16 +15,23 @@ from src.rag_pipeline import get_retrievers, lcel_pipeline, get_llm_prompt
 #import src.rag_pipeline
 #print(dir(src.rag_pipeline))
 
+from src.download_data import main
+
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from src.prompt import build_prompt
 
+#from dotenv import load_dotenv, find_dotenv
+#load_dotenv(find_dotenv())
+api_key = os.getenv("GROQ_API_KEY")
+#print("api_key: ", api_key)
 
 #Adopted from GPT. 
 
 # --- 1. Load Retrievers ---
 @st.cache_resource
 def load_resources():
+    main()
     return get_retrievers(3)
 bm25_retriever, semantic_retriever, hybrid_retriever=load_resources()
 
@@ -52,7 +60,7 @@ def get_results(query, mode, k=3):
 
 @st.cache_resource
 def get_llm_prompt_cached(): 
-    return get_llm_prompt()
+    return get_llm_prompt("llama-3.1-8b-instant")
 
 # --- 4. Display ---
 if query:

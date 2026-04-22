@@ -9,6 +9,11 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import LlamaCpp
 #from langchain_ollama import OllamaLLM
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+
 from pathlib import Path
 from prompt import build_prompt
 from utils import construct_corpus, preprocess_and_tokenize
@@ -16,14 +21,14 @@ from semantic import build_embeddings, get_vector_store
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 import traceback
 import argparse
 from hybrid import hybrid_RAG
 from bm25 import BM25
 import os
 
-load_dotenv()
+#load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
 
 def get_semantic_retriever(vectorstore, topK):
@@ -193,8 +198,8 @@ def get_retrievers(topK):
 
     return bm25.retriever, semantic_retriever, hybrid_retriever
 
-def get_llm_prompt(model_name=None):
-    load_dotenv()
+def get_llm_prompt(model_name):
+    load_dotenv(find_dotenv())
     llm = None
     if model_name == 'qwen3.5-0.8b':
         print("Using Local Qwen Model...")

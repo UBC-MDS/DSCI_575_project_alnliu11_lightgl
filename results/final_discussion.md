@@ -704,5 +704,33 @@ We choose Llama-3.1-8B-Instant because it responds faster and with a better qual
 ### Code Quality Changes
 - Summary of cleanups
 
+
 ## Step 4: Cloud Deployment Plan
-(See Step 4 above for required subsections)
+
+1. Data Storage: Where will you store the following?
+
+raw data: AWS S3
+processed data: AWS S3
+vector index: AWS S3
+BM25 index: AWS S3
+
+
+2. Compute
+
+Where will your app run?
+It will run on AWS EC2. 
+
+How will you handle multiple users (concurrency)?
+We have used @st.cache_resource to load the FAISS and BM25 indices into memory once, sharing them across all concurrent users. Streamlit handles multiple users by running a separate session for each browser tab. Multi-threading will be used to prevent from freezing the app. 
+
+How will you handle LLM inference (API vs hosted model)? 
+It is through API because it doesn't need GPU. 
+
+
+3. Streaming/Updates
+
+How will you incorporate new products in production?
+RAG will add those new products to index. Instead of rebuilding the whole index, we use FAISS's .add() method to append new product vectors to the existing index and re-save to S3.
+
+How will your pipeline stay up to date?
+Any changes to indices will trigger a deployment to the EC2 instance. 
