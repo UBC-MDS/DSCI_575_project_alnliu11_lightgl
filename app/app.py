@@ -8,10 +8,9 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", 'src'))
 
-from src.bm25 import BM25
 from src.utils import *
 #from src.rag_pipeline import get_retrievers, get_llm_prompt, lcel_pipeline
-from src.rag_pipeline import get_retrievers, lcel_pipeline
+from src.rag_pipeline import get_retrievers, lcel_pipeline, get_llm_prompt
 #import src.rag_pipeline
 #print(dir(src.rag_pipeline))
 
@@ -52,43 +51,8 @@ def get_results(query, mode, k=3):
     return results
 
 @st.cache_resource
-def get_llm_prompt(): 
-    # llm = OllamaLLM(
-    #     model="qwen3.5:2b",
-    #     model_kwargs={
-    #         "repeat_penalty": 1.15,
-    #         "temperature": 0.7,
-    #         "top_p": 0.8
-    #     }
-    # )
-
-    #Adopted from Gemini
-    model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
-
-    # # 1. Load the tokenizer and model using Transformers
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        device_map="auto",      # This handles your Mac's GPU/MPS automatically
-        torch_dtype="auto"
-    )
-    
-    # # 2. Create a Transformers pipeline
-    pipe = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=512,
-        temperature=0.7,
-        top_p=0.8,
-        repetition_penalty=1.15
-    )
-    
-    # # 3. Wrap it for LangChain
-    llm = HuggingFacePipeline(pipeline=pipe)
-
-    prompt_template = build_prompt()
-    return llm, prompt_template
+def get_llm_prompt_cached(): 
+    return get_llm_prompt()
 
 # --- 4. Display ---
 if query:
@@ -113,6 +77,7 @@ if query:
                     #st.metric("Score", res['score'])
                     st.write("⭐" * int(float(res['rating'])))
     with tab_rag:
-        llm, prompt_template=get_llm_prompt()
+        # model_mode = st.radio("Models", ["llama-3.1-8b-instant", "qwen3.5-0.8b"], horizontal=True)
+        llm, prompt_template=get_llm_prompt_cached()
         response = lcel_pipeline(query, hybrid_retriever, llm, prompt_template)
         st.info(response)
