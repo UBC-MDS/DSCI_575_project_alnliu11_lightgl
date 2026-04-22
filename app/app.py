@@ -6,7 +6,8 @@ from langchain_community.vectorstores import FAISS
 import sys
 import os
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", 'src'))
+#sys.path.append(os.path.join(os.path.dirname(__file__), "..", 'src'))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.bm25 import BM25
 from src.utils import *
