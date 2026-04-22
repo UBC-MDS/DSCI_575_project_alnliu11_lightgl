@@ -13,13 +13,18 @@ from pathlib import Path
 from prompt import build_prompt
 from utils import construct_corpus, preprocess_and_tokenize
 from semantic import build_embeddings, get_vector_store
-
+from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFacePipeline
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from dotenv import load_dotenv
 import traceback
-
+import argparse
 from hybrid import hybrid_RAG
 from bm25 import BM25
+import os
+
+load_dotenv()
+api_key = os.getenv("GROQ_API_KEY")
 
 def get_semantic_retriever(vectorstore, topK):
     # Adopted from Milestone 2 spec.
@@ -31,10 +36,17 @@ def get_semantic_retriever(vectorstore, topK):
 
 def build_context(docs):
     context_parts = list()
-    print(len(docs))
+    parent_asin_set = set()
+    doc_counts = 0
     for doc in docs:
         # Provide alternative values in case previous preprocessing falls through
         asin = doc.metadata.get('parent_asin', 'N/A')
+
+        # skip duplicated documents
+        if asin in parent_asin_set:
+            continue
+        doc_counts += 1
+
         title = doc.metadata.get('title', 'No Title Provided')
         reviews = doc.page_content
 
@@ -54,14 +66,16 @@ def build_context(docs):
             f"Price: {price_display}\n"
         )
         context_parts.append(item_str)
+        parent_asin_set.add(asin)
+    
+    print(f"Included {doc_counts} docs.")
 
     return "\n\n---\n\n".join(context_parts)
 
 def lcel_pipeline(query: str, 
     retriever: BaseRetriever, 
     llm: BaseChatModel, 
-    prompt_template: ChatPromptTemplate,
-    top_k=3
+    prompt_template: ChatPromptTemplate
 ):
     # Asked GPT:
     # Suppose I want to wrap this as a function, can you show me a list of statements
@@ -73,7 +87,6 @@ def lcel_pipeline(query: str,
     rag_chain = (
         RunnableParallel({
             "context": (retriever
-                        | RunnableLambda(lambda docs: docs[:top_k])
                         | build_context
                         ),
             "question": RunnablePassthrough()
@@ -87,10 +100,16 @@ def lcel_pipeline(query: str,
         if not response or not str(response).strip():
             print("[DEBUG] Chain completed but returned an empty response.")
         return response
-    except Exception as exc:
-        print(f"[DEBUG] RAG chain failed: {exc}")
+    except Exception as e:
+        print(f"[DEBUG] RAG chain failed: {e}")
         print(traceback.format_exc())
-        raise
+        if "429" in str(e):
+            print("Rate limit hit! Waiting 60 seconds...")
+            import time
+            time.sleep(60)
+            response = rag_chain.invoke(query)
+        else:
+            raise
 
 
 def debug_rag_once(
@@ -174,49 +193,63 @@ def get_retrievers(topK):
 
     return bm25.retriever, semantic_retriever, hybrid_retriever
 
-def get_llm_prompt(): 
-    # llm = OllamaLLM(
-    #     model="qwen3.5:2b",
-    #     model_kwargs={
-    #         "repeat_penalty": 1.15,
-    #         "temperature": 0.7,
-    #         "top_p": 0.8
-    #     }
-    # )
+def get_llm_prompt(model_name):
+    load_dotenv()
+    llm = None
+    if model_name == 'qwen3.5-0.8b':
+        print("Using Local Qwen Model...")
+        # Adopted from Gemini
+        model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
 
-    #Adopted from Gemini
-    model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder
-
-    # # 1. Load the tokenizer and model using Transformers
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_id,
-        device_map="auto",      # This handles your Mac's GPU/MPS automatically
-        torch_dtype="auto"
-    )
-    
-    # # 2. Create a Transformers pipeline
-    pipe = pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=512,
-        temperature=0.7,
-        top_p=0.8,
-        repetition_penalty=1.15
-    )
-    
-    # # 3. Wrap it for LangChain
-    llm = HuggingFacePipeline(pipeline=pipe)
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id,
+            device_map="auto",
+            torch_dtype="auto"
+        )
+        
+        # # 2. Create a Transformers pipeline
+        pipe = pipeline(
+            "text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=512,
+            temperature=0.7,
+            top_p=0.8,
+            repetition_penalty=1.15
+        )
+        
+        # # 3. Wrap it for LangChain
+        llm = HuggingFacePipeline(pipeline=pipe)
+    else:
+        print("Using Groq Model...")
+        llm = ChatGroq(
+            model=model_name,
+            max_tokens=512,
+            temperature=0.7,
+            top_p=0.8,
+            model_kwargs={
+                "frequency_penalty": 1.15
+            }
+        )
 
     prompt_template = build_prompt()
     return llm, prompt_template
 
 if __name__ == '__main__':
+    # Asked GPT: How to let the user specify different LLMs using command line?
+    parser = argparse.ArgumentParser(description="Amazon Product Query")
+    parser.add_argument(
+        "--model", 
+        choices=["llama-3.1-8b-instant", "qwen3.5-0.8b"], 
+        default="llama-3.1-8b-instant",
+        help="model to use"
+    )
+    args = parser.parse_args()
 
     bm25_retriever, semantic_retriever, hybrid_retriever=get_retrievers(5)
 
-    llm, prompt_template=get_llm_prompt()
+    llm, prompt_template=get_llm_prompt(args.model)
     
     # Asked GPT: How to enable user to keep specifying query until they are done?
     # print('\nSemantic retriever:\n')

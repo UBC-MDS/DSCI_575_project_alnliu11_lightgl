@@ -1,3 +1,4 @@
 data/
 models/
 faiss_index/
+.env

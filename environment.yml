@@ -26,9 +26,12 @@ dependencies:
     - langchain-core
     - langchain-community
     - langchain-huggingface
-    - langchain_ollama
-    - huggingface_hub
+    - langchain-groq
+    - python-dotenv
+    - huggingface_hub>=0.36.0
+    - tokenizers
     - accelerate
-    - transformers==4.41.2
-    - sentence-transformers==3.0.1
+    - transformers>=5.5.4,<6.0.0
+    - sentence-transformers>=5.4.1,<6.0.0
+    - sentencepiece
     - streamlit
