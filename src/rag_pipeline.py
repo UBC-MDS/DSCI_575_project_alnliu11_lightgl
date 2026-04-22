@@ -9,6 +9,9 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.llms import LlamaCpp
 #from langchain_ollama import OllamaLLM
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '.')))
+
 from pathlib import Path
 from prompt import build_prompt
 from utils import construct_corpus, preprocess_and_tokenize
