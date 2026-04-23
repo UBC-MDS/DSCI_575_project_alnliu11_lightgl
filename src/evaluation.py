@@ -4,10 +4,27 @@ from langchain_groq import ChatGroq
 from ragas.metrics import Faithfulness, FactualCorrectness
 from ragas.llms import LangchainLLMWrapper
 
-def build_dataset():
+def build_dataset(queries, references):
+    """
+    Build dataset for RAG evaluation purpose, by including retrieved contexts (based on documents),
+    RAG response, given query, and given references.
+
+    Parameters
+    ----------
+    queries : list of str
+        a list of user queries.
+    refereneces : list of str
+        a list of "ground truth" responses to compare RAG response to.
+
+    Returns
+    -------
+    list
+        A list of dict, including user query, retrieved contexts (for generation),
+        LLM response, and reference to compare to.
+    """
     dataset = []
     print("Building Dataset...")
-    for query, reference in zip(sample_queries, gemini_answers):
+    for query, reference in zip(queries, references):
         llm, prompt_template = get_llm_prompt("llama-3.1-8b-instant")
         _, _, hybrid_retriever = get_retrievers(5)
         docs = hybrid_retriever.invoke(query)
@@ -52,7 +69,7 @@ if __name__ == '__main__':
         """
     ]
     
-    evaluation_dataset = EvaluationDataset.from_list(build_dataset())
+    evaluation_dataset = EvaluationDataset.from_list(build_dataset(sample_queries, gemini_answers))
     evaluator_llm = LangchainLLMWrapper(ChatGroq(model="llama-3.3-70b-versatile"))
     # Asked GPT: How to use `from ragas.metrics.collections import ContextRecall` with `evaluate`?
     results = evaluate(

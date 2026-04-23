@@ -34,4 +34,5 @@ dependencies:
     - transformers>=5.5.4,<6.0.0
     - sentence-transformers>=5.4.1,<6.0.0
     - sentencepiece
+    - ragas==0.4.3
     - streamlit
