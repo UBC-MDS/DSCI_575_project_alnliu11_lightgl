@@ -19,11 +19,10 @@ from prompt import build_prompt
 from utils import construct_corpus, preprocess_and_tokenize
 from semantic import build_embeddings, get_vector_store
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFacePipeline
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from dotenv import load_dotenv, find_dotenv
 import traceback
 import argparse
+import time
 from hybrid import hybrid_RAG
 from bm25 import BM25
 import os
@@ -31,6 +30,23 @@ import os
 api_key = os.getenv("GROQ_API_KEY")
 
 def get_semantic_retriever(vectorstore, topK):
+    """
+    Return a semantics retriever based on the given vector database and number of documents
+    to retrieve.
+
+    Parameters
+    ----------
+    vectorstore : langchain_community.vectorstores.faiss.FAISS
+        built FAISS vector database.
+    topK : int
+        number of documents to retrieve.
+
+    Returns
+    -------
+    VectorStoreRetriever
+        retriever based on FAISS vectors and the similarity algorithm.
+
+    """
     # Adopted from Milestone 2 spec.
     print("Getting retriever...")
     return vectorstore.as_retriever(
@@ -39,6 +55,19 @@ def get_semantic_retriever(vectorstore, topK):
     )
 
 def build_context(docs):
+    """
+    Build and return LLM context string from the given documents metadata and content.
+
+    Parameters
+    ----------
+    docs : list of Document
+        relevant documents retrieved for building LLM context.
+
+    Returns
+    -------
+    string
+        Combined LLM context from the given documents.
+    """
     context_parts = list()
     parent_asin_set = set()
     doc_counts = 0
@@ -76,11 +105,36 @@ def build_context(docs):
 
     return "\n\n---\n\n".join(context_parts)
 
-def lcel_pipeline(query: str, 
-    retriever: BaseRetriever, 
-    llm: BaseChatModel, 
-    prompt_template: ChatPromptTemplate
+def lcel_pipeline(query, 
+    retriever, 
+    llm, 
+    prompt_template
 ):
+    """
+    Build a RAG pipeline with the given retriever, llm, and prompt template. Run the given query
+    through the pipeline and returned LLM response in string.
+
+    Parameters
+    ----------
+    query : string
+        user-given string.
+    retriever : BaseRetriever
+        retriever for getting the relevant documents.
+    llm : BaseChatModel
+        LLM model that generates response based on the query and context.
+    prompt_template : ChatPromptTemplate
+        prompt template to inject the context in and be passed to LLM.
+
+    Returns
+    -------
+    string
+        LLM response based on the query and retrieved information.
+    
+    Raises
+    ------
+    Exception
+        when error encounters when running the RAG chain.
+    """
     # Asked GPT:
     # Suppose I want to wrap this as a function, can you show me a list of statements
     # to import and a list of arguments to pass in. Don't show me what the code for
@@ -109,7 +163,6 @@ def lcel_pipeline(query: str,
         print(traceback.format_exc())
         if "429" in str(e):
             print("Rate limit hit! Waiting 60 seconds...")
-            import time
             time.sleep(60)
             response = rag_chain.invoke(query)
         else:
@@ -117,12 +170,34 @@ def lcel_pipeline(query: str,
 
 
 def debug_rag_once(
-    query: str,
-    retriever: BaseRetriever,
+    query,
+    retriever,
     llm,
-    prompt_template: ChatPromptTemplate,
-    max_docs_preview: int = 2,
+    prompt_template,
+    max_docs_preview = 2,
 ):
+    """
+    Debug a RAG pipeline with the given retriever, llm, and prompt template. Run the given query
+    step-by-step and preview the given number of retrieved documents.
+
+    Parameters
+    ----------
+    query : string
+        user-given string.
+    retriever : BaseRetriever
+        retriever for getting the relevant documents.
+    llm : BaseChatModel
+        LLM model that generates response based on the query and context.
+    prompt_template : ChatPromptTemplate
+        prompt template to inject the context in and be passed to LLM.
+    max_docs_preview : int
+        number of documents to preview.
+
+    Returns
+    -------
+    string
+        LLM response based on the query and retrieved information.
+    """
     print("\n[DEBUG] Stage 1: Retrieve documents")
     docs = retriever.invoke(query)
     print(f"[DEBUG] Retrieved {len(docs)} documents.")
@@ -146,7 +221,24 @@ def debug_rag_once(
     print(f"[DEBUG] Final output preview: {str(final_output)[:400]}")
     return final_output
 
-def run_query_loop(retriever: BaseRetriever, llm: BaseChatModel, prompt_template: ChatPromptTemplate):
+def run_query_loop(retriever, llm, prompt_template):
+    """
+    Prompt user to enter query and optionally enter the debug mode. It will keep accepting user
+    query until user triggers the stop condition via string like 'exit'.
+
+    Parameters
+    ----------
+    retriever : BaseRetriever
+        retriever for getting the relevant documents.
+    llm : BaseChatModel
+        LLM model that generates response based on the query and context.
+    prompt_template : ChatPromptTemplate
+        prompt template to inject the context in and be passed to LLM.
+
+    Returns
+    -------
+    None
+    """
     print("Enter a query, or type 'exit' / 'quit' / press Enter on an empty line to stop.")
     print("Type '/debug <your query>' to print chain internals.")
     while True:
@@ -172,7 +264,21 @@ def run_query_loop(retriever: BaseRetriever, llm: BaseChatModel, prompt_template
         print(response)
         print("\n" + "=" * 80 + "\n")
 
-def get_retrievers(topK): 
+def get_retrievers(topK):
+    """
+    Built and return BM25Retriever, VectorStoreRetriever, and EnsembleRetriever that retrieves
+    the given number of documents (except EnsembleRetriever will retrieve 2 * topK documents).
+
+    Parameters
+    ----------
+    topK : int
+        number of documents to retrieve.
+
+    Returns
+    -------
+    tuple
+        tuple of three elements, which are BM25Retriever, VectorStoreRetriever, and EnsembleRetriever.
+    """
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=100
@@ -198,9 +304,25 @@ def get_retrievers(topK):
     return bm25.retriever, semantic_retriever, hybrid_retriever
 
 def get_llm_prompt(model_name):
+    """
+    Get and returned the LLM model of the given name. Also returned the LLM prompt.
+
+    Parameters
+    ----------
+    model_name : str
+        model name.
+
+    Returns
+    -------
+    tuple
+        tuple of two elements. LLM and prompt.
+    """
     load_dotenv(find_dotenv())
     llm = None
     if model_name == 'qwen3.5-0.8b':
+        from langchain_huggingface import HuggingFacePipeline
+        from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
         print("Using Local Qwen Model...")
         # Adopted from Gemini
         model_id = "./qwen3.5-0.8b"  # Ensure this points to your folder

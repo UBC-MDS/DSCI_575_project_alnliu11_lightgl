@@ -25,6 +25,19 @@ api_key = os.getenv("GROQ_API_KEY")
 # --- 1. Load Retrievers ---
 @st.cache_resource
 def load_resources():
+    """
+    Download Amazon products and review data. Return BM25Retriever, VectorStoreRetriever, and EnsembleRetriever.
+    The first two retrieves 3 documents max, and the last one retrieves 6 max.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    tuple
+        tuple of three elements, which are BM25Retriever, VectorStoreRetriever, and EnsembleRetriever.
+    """
     main()
     return get_retrievers(3)
 bm25_retriever, semantic_retriever, hybrid_retriever=load_resources()
@@ -36,6 +49,24 @@ query = st.text_input("What are you looking for?", placeholder="e.g., waterproof
 
 # --- 3. Retrieval Logic ---
 def get_results(query, mode, k=3):
+    """
+    Use the retrieve corresponding to the given mode to search documents.
+    Return the title and rating of a maximum of top k documents.
+
+    Parameters
+    ----------
+    query : str
+        user query.
+    mode : str
+        either "BM25", "Semantic", or "Hybrid" mode.
+    k : int
+        number of documents to retrieve.
+
+    Returns
+    -------
+    list of dict
+        a list of dict of top k documents' title and rating.
+    """
     results = []
     
     if mode == "BM25":
@@ -53,7 +84,19 @@ def get_results(query, mode, k=3):
     return results
 
 @st.cache_resource
-def get_llm_prompt_cached(): 
+def get_llm_prompt_cached():
+    """
+    A cached version of rag_pipeline.py `get_llm_prompt()`
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    tuple
+        tuple of two elements. LLM and prompt.
+    """
     return get_llm_prompt("llama-3.1-8b-instant")
 
 # --- 4. Display ---
