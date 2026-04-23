@@ -6,6 +6,19 @@ from utils import *
 
 
 def _resolve_embedding_device(device=None):
+    """
+    Resolve the device for building text embeddings based on the user system, if specified "auto".
+
+    Parameters
+    ----------
+    device : str
+        device for building text embeddings.
+
+    Returns
+    -------
+    string
+        resolved device name.
+    """
     requested_device = (device or os.getenv("EMBEDDINGS_DEVICE", "auto")).strip().lower()
     if requested_device == "auto":
         try:
@@ -19,6 +32,21 @@ def _resolve_embedding_device(device=None):
 
 
 def build_embeddings(model_name="sentence-transformers/all-MiniLM-L6-v2", device=None):
+    """
+    Loading embeddings of the given model with the given device.
+
+    Parameters
+    ----------
+    model_name : str
+        embeddings model.
+    device : str
+        device for loading.
+
+    Returns
+    -------
+    HuggingFaceEmbeddings
+        the corresponding hugging face embeddings.
+    """
     # Asked GPT: What to do to make the embeddings run on GPU,
     # while accommodating other developers who do not have GPU?
     resolved_device = _resolve_embedding_device(device)
@@ -33,6 +61,28 @@ def build_embeddings(model_name="sentence-transformers/all-MiniLM-L6-v2", device
 
 
 def get_vector_store(embeddings, faiss_index_dir, documents=None, corpus_builder=None):
+    """
+    Created and returned FAISS vector database generated with given embeddings. Saved the word vectors
+    in the given directory. Either documents or corpus_builder should be passed. If given documents,
+    built FAISS word vectors based on documents. If did not pass documents, generate documents with
+    corpus_builder before building the word vectors.
+
+    Parameters
+    ----------
+    embeddings : HuggingFaceEmbeddings
+        the hugging face embeddings.
+    faiss_index_dir : pathlib.Path
+        directory path for saving FAISS vector database to.
+    documents : Document
+        documents to create the vector database from.
+    corpus_builder : function
+        function for building the documents, if documents not specified.
+
+    Returns
+    -------
+    FAISS
+        vector database generated with the given documents or documents built with corpus_builder.
+    """
     #Adopted from GPT.
     vector_store = None
     if faiss_index_dir.exists():
@@ -56,9 +106,3 @@ def get_vector_store(embeddings, faiss_index_dir, documents=None, corpus_builder
         execution_time = time.perf_counter() - start_time
         print(f"Creating FAISS Index took {execution_time:.4f} seconds.")
     return vector_store
-
-def get_query_results(queries, vector_store): 
-    semantic_search_results=[]
-    for q in queries: 
-        semantic_search_results.append(vector_store.similarity_search(q, k=5))
-    return semantic_search_results
