@@ -27,7 +27,6 @@ from hybrid import hybrid_RAG
 from bm25 import BM25
 import os
 
-#load_dotenv()
 api_key = os.getenv("GROQ_API_KEY")
 
 def get_semantic_retriever(vectorstore, topK):
@@ -52,7 +51,7 @@ def get_semantic_retriever(vectorstore, topK):
     print("Getting retriever...")
     return vectorstore.as_retriever(
         search_type="similarity",
-        search_kwargs={"k": topK} # Fetch 5 most similar documents
+        search_kwargs={"k": topK} # Fetch topK most similar documents
     )
 
 def build_context(docs):
@@ -290,7 +289,7 @@ def get_retrievers(topK):
     # Asked GPT: how to adjust the script to only construct corpus if we do not have the FAISS index?
     docs = construct_corpus(
         text_splitter=text_splitter,
-        threshold=20000
+        threshold=10000
     )
     vector_store = get_vector_store(
         embeddings=embeddings,

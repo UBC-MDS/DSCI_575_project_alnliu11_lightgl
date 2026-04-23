@@ -44,7 +44,7 @@ def remove_unwanted_keys(unwanted_keys, data):
     for key in unwanted_keys:
         data.pop(key, None)
 
-def assemble_product_info(threshold = 20000):
+def assemble_product_info(threshold = 10000):
     """
     Created and return a DataFrame of the given number of Amazon products, retrieved from Amazon
     metadata file. Also return the set of parent asin (Parent ID of the Product).
@@ -161,7 +161,7 @@ def assemble_reviews_info(parent_asin_set, threshold = 20):
     print(reviews_df.head())
     return reviews_df
 
-def merge_product_and_reviews(threshold = 20000):
+def merge_product_and_reviews(threshold = 10000):
     """
     Retrieved the given threshold of Amazon products and merged with the corresponding product reviews. Exported the DataFrame into a CSV file.
 
@@ -183,7 +183,7 @@ def merge_product_and_reviews(threshold = 20000):
     merged_df.to_csv(processed_data_folder / "merged.csv")
     print("Done!")
 
-def construct_corpus(text_splitter=None, threshold = 20000):
+def construct_corpus(text_splitter=None, threshold = 10000):
     """
     Construct and return documents for retrieval from the Amazon products data and product reviews data. Prepared documents are split in chunks
     by the given splitter object.
