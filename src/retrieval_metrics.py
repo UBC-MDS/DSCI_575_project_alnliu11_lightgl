@@ -16,7 +16,7 @@ if __name__ == '__main__':
     )
     docs = construct_corpus(
         text_splitter=text_splitter,
-        threshold=20000
+        threshold=10000
     )
     bm25_index_dir = Path("models/bm25_index")
     bm25_model = BM25.from_index_or_documents(docs, topK, preprocess_and_tokenize, bm25_index_dir)

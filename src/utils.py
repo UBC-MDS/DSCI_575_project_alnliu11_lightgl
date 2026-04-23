@@ -30,7 +30,7 @@ def remove_unwanted_keys(unwanted_keys, data):
     for key in unwanted_keys:
         data.pop(key, None)
 
-def assemble_product_info(threshold = 20000):
+def assemble_product_info(threshold = 10000):
     product_count = 1
     product_list = list()
     parent_asin_set = set()
@@ -117,7 +117,7 @@ def assemble_reviews_info(parent_asin_set, threshold = 20):
     print(reviews_df.head())
     return reviews_df
 
-def merge_product_and_reviews(threshold = 20000):
+def merge_product_and_reviews(threshold = 10000):
     print("Getting Product Info...")
     products_df, parent_asin_set = assemble_product_info(threshold)
     print("Getting Reviews Info...")
@@ -127,7 +127,7 @@ def merge_product_and_reviews(threshold = 20000):
     merged_df.to_csv(processed_data_folder / "merged.csv")
     print("Done!")
 
-def construct_corpus(text_splitter=None, threshold = 20000):
+def construct_corpus(text_splitter=None, threshold = 10000):
     # Create Merged data if not existent
     if not processed_data_path.exists():
         merge_product_and_reviews(threshold=threshold)
