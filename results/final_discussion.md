@@ -3,8 +3,8 @@
 ## Step 1: Improve Your Workflow
 
 ### Dataset Scaling
-- Number of products used: 20000
-- Changes to sampling strategy (if any): None
+- Number of products used: 10000
+- Changes to sampling strategy (if any): Reduce to using the first 10000 products for faster deployment.
 
 ### LLM Experiment
 
