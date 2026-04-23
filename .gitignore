@@ -2,3 +2,4 @@ data/
 models/
 faiss_index/
 .env
+qwen3.5-0.8b/

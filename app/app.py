@@ -121,14 +121,9 @@ if query:
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.markdown(f"**{res['title']}**")
-                    # Truncate text to ~200 chars
-                    #display_text = res['text'][:200] + "..." if len(res['text']) > 200 else res['text']
-                    #st.write(display_text)
                 with col2:
-                    #st.metric("Score", res['score'])
                     st.write("⭐" * int(float(res['rating'])))
     with tab_rag:
-        # model_mode = st.radio("Models", ["llama-3.1-8b-instant", "qwen3.5-0.8b"], horizontal=True)
         llm, prompt_template=get_llm_prompt_cached()
         response = lcel_pipeline(query, hybrid_retriever, llm, prompt_template)
         st.info(response)

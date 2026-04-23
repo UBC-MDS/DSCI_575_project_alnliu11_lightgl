@@ -33,4 +33,5 @@ dependencies:
     - sentence-transformers>=5.4.1,<6.0.0
     - accelerate
     - sentencepiece
+    - ragas==0.4.3
     - streamlit
